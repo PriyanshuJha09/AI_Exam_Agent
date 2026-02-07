@@ -1,85 +1,48 @@
 import streamlit as st
+from groq import Groq
 
-# ---------------- CONFIG ----------------
-st.set_page_config(
-    page_title="AI Exam Agent",
-    page_icon="📘",
-    layout="wide"
+# Initialize Groq client using Streamlit secrets
+client = Groq(
+    api_key=st.secrets["GROQ_API_KEY"]
 )
 
-# ---------------- UI HEADER ----------------
-st.title("📘 AI Exam Agent for Semester Exams")
-st.write(
-    "Enter your **subject** and **previous year questions** to get "
-    "**important questions, notes, and answers with diagram guidance**."
-)
+def generate_exam_content(subject, semester, college, pyq):
+    prompt = f"""
+You are an expert Indian university exam mentor.
 
-# ---------------- INPUT SECTION ----------------
-st.subheader("📝 Input Section")
+Subject: {subject}
+Semester: {semester}
+College: {college}
 
-col1, col2 = st.columns(2)
+Previous Year Questions:
+{pyq}
 
-with col1:
-    subject = st.text_input("Subject Name", placeholder="e.g., Signals & Systems")
-    semester = st.text_input("Semester", placeholder="e.g., 4th Semester")
+TASK:
+1. Identify most important & repeated questions
+2. Generate exam-oriented notes
+3. Write clear answers
+4. Include diagram descriptions (textual)
 
-with col2:
-    university = st.text_input("University Name", placeholder="e.g., ABC Engineering University")
+FORMAT STRICTLY AS:
+IMPORTANT QUESTIONS:
+- ...
 
-previous_year_questions = st.text_area(
-    "Paste Previous Year Questions",
-    height=250,
-    placeholder="Paste all previous year questions here..."
-)
+NOTES:
+- ...
 
-generate_btn = st.button("🚀 Generate Exam Material")
-
-# ---------------- MOCK AI LOGIC (NO API) ----------------
-def generate_exam_content(subject, semester, university, pyq):
-    return f"""
-### ✅ IMPORTANT QUESTIONS
-- Explain the basic concepts of **{subject}**
-- Derive key formulas related to **{subject}**
-- Explain any one important diagram-based question from previous years
-
----
-
-### 📘 NOTES
-- **Introduction**: {subject} is an important subject for semester exams.
-- **Exam Tip**: Questions are often repeated with small variations.
-- **Focus Areas**: Definitions, derivations, numerical problems, diagrams.
-
----
-
-### ✍️ ANSWERS WITH DIAGRAM GUIDANCE
-
-**Question:** Explain a core concept of {subject}
-
-**Answer:**
-- Start with a clear definition
-- Explain working step-by-step
-- Write 4–6 exam-oriented points
-
-**Diagram (How to draw in exam):**
-- Draw a neat block diagram
-- Label input, process block, and output
-- Use ruler and proper arrows
-
----
-
-📌 *Note: This is a demo output. AI intelligence will be added later.*
+ANSWERS WITH DIAGRAMS:
+- Question
+  Answer:
+  Diagram:
 """
 
-# ---------------- OUTPUT SECTION ----------------
-if generate_btn:
-    if not subject or not previous_year_questions:
-        st.warning("⚠️ Please enter subject and previous year questions.")
-    else:
-        st.subheader("📤 Output Section")
-        result = generate_exam_content(
-            subject,
-            semester,
-            university,
-            previous_year_questions
-        )
-        st.markdown(result)
+    response = client.chat.completions.create(
+        model="llama3-70b-8192",
+        messages=[
+            {"role": "system", "content": "You are a helpful exam assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.3
+    )
+
+    return response.choices[0].message.content
