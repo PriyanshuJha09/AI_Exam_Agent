@@ -53,11 +53,12 @@ elif os.getenv("GROQ_API_KEY"):
 # AI FUNCTION (ONLY CALLED ON CLICK)
 # ==============================
 def generate_exam_content(subject, semester, college, pyq):
-    from groq import Groq   # <-- lazy import (IMPORTANT)
+    try:
+        from groq import Groq
 
-    client = Groq(api_key=groq_key)
+        client = Groq(api_key=groq_key)
 
-    prompt = f"""
+        prompt = f"""
 You are an expert Indian university exam mentor.
 
 Subject: {subject}
@@ -68,21 +69,105 @@ Previous Year Questions:
 {pyq}
 
 TASK:
-1. Identify most important & repeated questions
-2. Generate exam-oriented notes
-3. Write answers
-4. Include diagram descriptions (text only)
+1. Identify MOST IMPORTANT & REPEATED questions
+2. Group them topic-wise
+3. Write EXAM-ORIENTED notes
+4. Provide clear answers (5–8 points)
+5. Include DIAGRAM INSTRUCTIONS (text only)
 
-FORMAT:
+FORMAT STRICTLY AS:
+
 IMPORTANT QUESTIONS:
 - ...
 
 NOTES:
-- ...
+- Topic:
+  - point
 
 ANSWERS WITH DIAGRAMS:
-- ...
+Q:
+Answer:
+- point
+Diagram:
+- how to draw
 """
+
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": "You generate strict university exam answers."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.2,
+            max_tokens=1200
+        )
+
+        return response.choices[0].message.content
+
+    except Exception as e:
+        return f"""
+⚠️ AI TEMPORARILY UNAVAILABLE
+
+Fallback analysis for subject: **{subject}**
+
+IMPORTANT QUESTIONS:
+- OSI model and its layers
+- TCP vs UDP
+- Congestion control
+- Network topologies
+- Error detection techniques
+
+NOTES:
+- Focus on layered architecture
+- Protocol differences are frequently asked
+- Diagrams carry easy marks
+
+ERROR (for developer):
+{str(e)}
+"""
+
+
+        response = client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=[
+                {"role": "system", "content": "You are a strict university exam answer generator."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.2,
+            max_tokens=1200
+        )
+
+        return response.choices[0].message.content
+
+    except Exception as e:
+        # 🔴 FALLBACK – APP NEVER DIES
+        return f"""
+⚠️ AI TEMPORARILY UNAVAILABLE
+
+But here is a SMART ANALYSIS of your input:
+
+SUBJECT: {subject}
+
+IMPORTANT QUESTIONS (Predicted):
+- Explain fundamental concepts of {subject}
+- Derive important formulas from {subject}
+- Explain any diagram-based question from PYQs
+
+NOTES:
+- Focus on definitions, derivations, numericals
+- PYQs indicate repeated concepts
+- Diagrams carry easy marks
+
+ANSWER STRUCTURE (Use in Exam):
+- Definition (2 lines)
+- Explanation (4–5 points)
+- Diagram (neat & labeled)
+- Conclusion (1 line)
+
+TECHNICAL ERROR DETAILS (for developer):
+{str(e)}
+"""
+
 
     response = client.chat.completions.create(
         model="llama3-70b-8192",
