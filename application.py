@@ -1,4 +1,8 @@
 import streamlit as st
+
+st.write("✅ APP STARTED")
+
+import streamlit as st
 from groq import Groq
 
 # Initialize Groq client using Streamlit secrets
